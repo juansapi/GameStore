@@ -1,0 +1,100 @@
+﻿@page "/ComentarioAdd/{IdProducto:int}"
+
+@using Microsoft.AspNetCore.Http
+@using WebApplication1.Data.Model
+@using WebApplication1.Data.Service
+@using System.IO
+
+@inject IComentariosService ComentariosService
+@inject IProductoService ProductoService
+@inject NavigationManager NavigationManager
+@inject IUsuarioService UsuarioService
+@inject IHttpContextAccessor httpContextAccessor
+
+<h1>Adicionar Un Comentario!</h1>
+
+<h1 class="Destacados">Comentar El Producto: @productos.Codi_Prod</h1>
+
+<table>
+    <tr>
+        <td>Comentario:</td>
+        <td><input type="text" @bind-value="comentarios.Come_Come" required /></td>
+    </tr>
+    <tr>
+        <td colspan="2">
+
+            <input type="submit" value="Adicionar" @onclick="() => Calificacion(comentarios.Come_Come)"/>
+            <input type="button" value="Cancelar" @onclick="@Cancel" />
+            
+        </td>
+    </tr>
+</table>
+
+@code {
+
+    //Variables
+    Comentarios comentarios = new Comentarios();
+    Productos productos = new Productos();
+
+    [Parameter]
+    public int IdProducto { get; set; }
+
+    public string UserName = null;
+
+    public string codeusuario = "";
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private string _authMessage;
+
+    private async Task LogUsername()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            _authMessage = $"{user.Identity.Name} is authenticated.";
+        }
+        else
+        {
+            _authMessage = "The user is NOT authenticated.";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //reportes.Fech_Repo = DateTime.Now;
+        if (IdProducto > 0)
+        {
+            productos = await ProductoService.ProductoSelect(IdProducto);
+        }
+
+        if (httpContextAccessor.HttpContext.User.Identity.Name != null)
+        {
+            codeusuario = httpContextAccessor.HttpContext.User.Identity.Name;
+        }
+        else
+        {
+            codeusuario = "";
+        }
+    }
+
+    void Cancel()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    protected async Task Calificacion(String a)
+    {
+        Usuario usuario = new Usuario();
+        usuario = await UsuarioService.UsuarioSelect(codeusuario);
+        comentarios = new Comentarios();
+        comentarios.Codi_ProdProductos = IdProducto;
+        comentarios.Codi_UserUsuarios = usuario.Id;
+        comentarios.Come_Come = a;
+        await ComentariosService.ComentariosInsert(comentarios);
+        NavigationManager.NavigateTo("/");
+    }
+}

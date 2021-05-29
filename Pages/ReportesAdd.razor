@@ -1,0 +1,143 @@
+﻿@page "/ReportesAdd/{IdProducto:int}"
+
+@using WebApplication1.Data.Model
+@using WebApplication1.Data.Service
+@using System.IO
+
+@inject IReportesService ReportesService
+@inject IProductoService ProductoService
+@inject NavigationManager NavigationManager
+@inject IUsuarioService UsuarioService
+
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor httpContextAccessor
+
+
+
+
+<h1>Adicionar Reporte</h1>
+
+
+
+    <h1 class="Destacados">Denunciar El Producto: @productos.Codi_Prod</h1>
+
+    <table>
+        <tr>
+            <td>Fecha: @DateTime.Now</td>
+            <!--   <td><input type="datetime-local" data-val="true" id="Date" name="Date" @bind-value="reportes.Fech_Repo" required /></td>-->
+
+        </tr>
+        <tr>
+            <td>Titulo:</td>
+            <td><input type="text" @bind-value="reportes.Name_Repo" required /></td>
+        </tr>
+        <tr>
+            <td>Descripcion:</td>
+            <td><input type="text" @bind-value="reportes.Desp_Repo" /></td>
+        </tr>
+
+
+        <tr>
+            <td colspan="2">
+                <input type="submit" value="Adicionar" @onclick="() => Reportes(reportes.Name_Repo, reportes.Desp_Repo)" />
+                <input type="button" value="Cancelar" @onclick="@Cancel" />
+
+                
+
+
+            </td>
+        </tr>
+
+    </table>
+
+
+
+
+
+
+
+
+
+
+@code { Reportes reportes = new Reportes();
+    Productos productos = new Productos();
+
+
+    [Parameter]
+    public int IdProducto { get; set; }
+
+
+    public string UserName = null;
+
+
+    public string codeusuario = "";
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private string _authMessage;
+
+    private async Task LogUsername()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            _authMessage = $"{user.Identity.Name} is authenticated.";
+        }
+        else
+        {
+            _authMessage = "The user is NOT authenticated.";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //reportes.Fech_Repo = DateTime.Now;
+        if (IdProducto > 0)
+        {
+            productos = await ProductoService.ProductoSelect(IdProducto);
+        }
+
+        if (httpContextAccessor.HttpContext.User.Identity.Name != null)
+        {
+            codeusuario = httpContextAccessor.HttpContext.User.Identity.Name;
+        }
+        else
+        {
+            codeusuario = "";
+        }
+
+    }
+
+
+
+
+
+
+
+    void Cancel()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+
+    protected async Task Reportes(String a, String b)
+    {
+        Usuario usuario = new Usuario();
+        usuario = await UsuarioService.UsuarioSelect(codeusuario);
+        reportes = new Reportes();
+        reportes.Codi_ProdProductos = IdProducto;
+        reportes.Codi_UserUsuarios = usuario.Id;
+        reportes.Fech_Repo = DateTime.Now;
+        reportes.Name_Repo = a;
+        reportes.Desp_Repo = b;
+        await ReportesService.ReportesInsert(reportes);
+        NavigationManager.NavigateTo("/");
+
+    }
+
+
+
+    }

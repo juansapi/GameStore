@@ -1,0 +1,88 @@
+﻿@page "/ReportesList"
+@attribute [Authorize(Roles = "Admin")]
+
+@using WebApplication1.Data.Service
+@using WebApplication1.Data.Model
+
+@inject IReportesService ReportesService
+@inject NavigationManager NavigationManager
+
+<h1>Lista de Reportes</h1>
+
+<table class="table">
+    <thead>
+        <div class="input-group">
+            <input type="number" id="busqueda" @bind="busqueda" placeholder="Buscar Producto" class="form-control" />
+            <span>
+
+                <button type="submit" class="btn btn-default btn-info my-auto p-2" value="Buscar" @onclick="() => Buscar(busqueda)">
+                    <i class="fas fa-search"></i>
+                </button>
+
+            </span>
+        </div>
+
+        <tr>
+            <th>Código Usuario</th>
+            <th>Código Producto</th>
+            <th>Fecha Reporte</th>
+            <th>Titulo Reporte</th>
+            <th>Descripcion Reporte</th>
+
+        </tr>
+    </thead>
+    <tbody>
+
+       
+
+        
+
+
+        @if (reportes != null)
+        {
+            @foreach (var reporte in reportes)
+            {
+                <tr>
+
+                    <td>@reporte.Codi_UserUsuarios</td>
+                    <td>@reporte.Codi_ProdProductos</td>
+                    <td>@reporte.Fech_Repo</td>
+                    <td>@reporte.Name_Repo</td>
+                    <td>@reporte.Desp_Repo</td>
+
+
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+
+    IEnumerable<Reportes> reportes;
+
+    public int busqueda;
+
+    protected override async Task OnInitializedAsync()
+    {
+        reportes = await ReportesService.GetAllReportes();
+    }
+
+    void EditarRegistro(int id)
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+
+    protected async Task Buscar(int busqueda)
+    {
+
+        reportes = await ReportesService.Search(busqueda);
+        //await JSRuntime.InvokeAsync<bool>
+
+
+    }
+
+
+
+}

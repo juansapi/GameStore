@@ -1,0 +1,168 @@
+﻿@page "/FavoritoList"
+
+@using WebApplication1.Data.Model
+@using WebApplication1.Data.Service
+@using WebApplication1.Data.PDF
+@using System.IO
+
+@inject IJSRuntime JSRuntime
+@inject IProductoService ProductoService
+@inject NavigationManager NavigationManager
+@inject IPuntuacionesService PuntuacionesService
+@inject IFavoritoService FavoritoService
+@inject IUsuarioService UsuarioService
+@inject IFacturaService FacturaService
+@inject IFacturaPDF FacturaPDF
+
+@inject NavigationManager NavigationManager
+
+@inject Blazored.SessionStorage.ISessionStorageService sessionCarrito
+
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor httpContextAccessor
+
+<h1>Lista de Favoritos</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+
+            <th>Código Producto</th>
+
+
+        </tr>
+    </thead>
+
+
+    <tbody>
+
+
+        @if (favoritos != null)
+        {
+            foreach (var favorito in favoritos)
+            {
+
+                if (favorito.Codi_UserUsuarios == usuarios.Id)
+                {
+
+                    <tr>
+                        <td>@favorito.Codi_ProdProductos</td>
+                       
+
+                    </tr>
+
+
+
+
+                }
+
+            }
+
+        }
+
+        
+
+
+    </tbody>
+</table>
+
+@code {
+
+    //  Favorito favoritos = new Favorito();
+    IEnumerable<Favorito> favoritos;
+
+    // IEnumerable<Productos> productos;
+
+   Productos productos = new Productos();
+
+    Usuario usuarios = new Usuario();
+
+    Factura factura = null;
+
+
+    [Parameter]
+    public int IdProducto { get; set; }
+
+
+
+    // [Parameter]
+    //public string busqueda { get; set; }
+    public string busqueda = "";
+    public int Opcion;
+    public string codeusuario = "";
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private string _authMessage;
+
+    private async Task LogUsername()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            _authMessage = $"{user.Identity.Name} is authenticated.";
+        }
+        else
+        {
+            _authMessage = "The user is NOT authenticated.";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IdProducto > 0)
+        {
+            productos = await ProductoService.ProductoSelect(IdProducto);
+
+
+        }
+
+
+
+        if (httpContextAccessor.HttpContext.User.Identity.Name != null)
+        {
+            codeusuario = httpContextAccessor.HttpContext.User.Identity.Name;
+            usuarios = await UsuarioService.UsuarioSelect(codeusuario);
+            favoritos = await FavoritoService.GetAllFavoritos();
+        }
+        else
+        {
+            codeusuario = "";
+        }
+
+    }
+
+
+
+    public void SeleccionarProducto(int id)
+    {
+        NavigationManager.NavigateTo("/Compra/" + id);
+    }
+
+    public async Task GenerarFactura()
+    {
+
+        Usuario usuario = new Usuario();
+        usuario = await UsuarioService.UsuarioSelect(codeusuario);
+
+        
+
+        factura = new Factura();
+        factura.Codi_UserUsuarios = usuario.Id;
+        factura.Codi_ProdProductos = IdProducto;
+        factura.Fech_Fact = DateTime.Now;
+        factura.Prec_Fact = productos.Pric_Prod;
+
+        
+
+        await FacturaService.FacturaInsert(factura);
+
+        await FacturaPDF.GeneraFactura(factura, usuario, productos);
+
+        NavigationManager.NavigateTo("/Confirmacion");
+    }
+
+}
